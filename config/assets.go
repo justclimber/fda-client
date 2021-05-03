@@ -20,27 +20,27 @@ func NewAssets() *Assets {
 type NineSlicesEnum string
 
 const (
-	imgWindow NineSlicesEnum = "window"
-	imgButton NineSlicesEnum = "button"
+	ImgWindow NineSlicesEnum = "window"
+	ImgButton NineSlicesEnum = "button"
 )
 
 func GetAvailableImages() []NineSlicesEnum {
 	return []NineSlicesEnum{
-		imgWindow,
-		imgButton,
+		ImgWindow,
+		ImgButton,
 	}
 }
 
 type FontsEnum string
 
 const (
-	fntDefault FontsEnum = "default"
-	fntCode    FontsEnum = "code"
+	FntDefault FontsEnum = "default"
+	FntCode    FontsEnum = "code"
 )
 
 func GetAvailableFonts() []FontsEnum {
 	return []FontsEnum{
-		fntDefault,
-		fntCode,
+		FntDefault,
+		FntCode,
 	}
 }

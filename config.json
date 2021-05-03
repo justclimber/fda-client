@@ -4,7 +4,6 @@
       "face_file": "NotoSans-Regular.ttf",
       "size": 20
     },
-
     "code": {
       "face_file": "DroidSans.ttf",
       "size": 20
@@ -18,7 +17,8 @@
         "Top": 5,
         "Right": 5,
         "Bottom": 5
-      }
+      },
+      "font_color": {"R": 255, "G": 255, "B": 255, "A": 255}
     }
   },
   "server": {

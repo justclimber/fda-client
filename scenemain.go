@@ -5,6 +5,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 	"github.com/justclimber/ebitenui"
 	"github.com/justclimber/fda-client/config"
+	"log"
 	"time"
 )
 
@@ -20,15 +21,26 @@ func newSceneMain(assets *config.Assets, config *config.Config) *SceneMain {
 		assets: assets,
 		config: config,
 	}
-	s.stateUpdateFunc = s.idleUpdate
+	s.stateUpdateFunc = s.setupUpdate
 	s.stateDrawFunc = s.idleDraw
+
 	return s
 }
 
+func (s *SceneMain) setupUpdate(dt time.Duration) (SceneStateUpdateFunc, SceneStateDrawFunc, bool, error) {
+	s.setupUI()
+	log.Print(123123)
+	return s.idleUpdate, s.idleDraw, true, nil
+}
+
 func (s *SceneMain) idleUpdate(dt time.Duration) (SceneStateUpdateFunc, SceneStateDrawFunc, bool, error) {
-	return nil, nil, false, nil
+	s.ui.Update()
+	return s.staySameState()
 }
 
 func (s *SceneMain) idleDraw(screen *ebiten.Image) {
 	ebitenutil.DebugPrint(screen, "Yay! we in the game now!")
+	if s.ui != nil {
+		s.ui.Draw(screen)
+	}
 }

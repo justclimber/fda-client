@@ -2,6 +2,7 @@ package config
 
 import (
 	"github.com/justclimber/ebitenui/widget"
+	"image/color"
 	"net"
 )
 
@@ -21,8 +22,9 @@ type Style struct {
 }
 
 type WindowsPanel struct {
-	Width   int           `json:"width"`
-	Padding widget.Insets `json:"padding"`
+	Width     int           `json:"width"`
+	Padding   widget.Insets `json:"padding"`
+	FontColor color.RGBA    `json:"font_color"`
 }
 
 type Server struct {

@@ -44,14 +44,15 @@ func (s *SceneStart) loadConfigUpdate() SceneStateUpdateFunc {
 			return s.error("decoding json config file", err)
 		}
 		s.config = &c
-		return s.loadAssetsUpdate(0, 0, []string{}), s.loadDraw([]string{"config loaded"}), false, nil
+		log := []string{"config loaded"}
+		return s.loadAssetsUpdate(0, 0, log), s.loadDraw(log), false, nil
 	}
 }
 
 func (s *SceneStart) loadAssetsUpdate(imgIndex int, fontIndex int, log []string) SceneStateUpdateFunc {
 	return func(dt time.Duration) (SceneStateUpdateFunc, SceneStateDrawFunc, bool, error) {
 		if imgIndex == len(config.GetAvailableImages()) && fontIndex == len(config.GetAvailableFonts()) {
-			duration := 3 * time.Second
+			duration := 1 * time.Millisecond
 			return s.serverConnectingUpdate(duration), s.serverConnectingDraw(duration), true, nil
 		}
 		if imgIndex < len(config.GetAvailableImages()) {

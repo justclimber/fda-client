@@ -64,13 +64,20 @@ func NewGame() *Game {
 func (g *Game) LoadScenes() {
 	g.scenes = make(map[SceneID]Scene)
 	g.scenes[GameSceneStart] = newSceneStart(g.assets, g.config)
-	g.scenes[GameSceneMain] = newSceneMain(g.assets, g.config)
 }
 
 func (g *Game) SwitchScene(s SceneID) error {
-	scene, ok := g.scenes[s]
-	if !ok {
-		return errors.New("Undefined or unloaded scene: " + string(s))
+	scene, loaded := g.scenes[s]
+	if !loaded {
+		switch s {
+		case GameSceneMain:
+			// @fixme: ugly hack!
+			g.config = g.scenes[GameSceneStart].(*SceneStart).config
+			scene = newSceneMain(g.assets, g.config)
+			g.scenes[GameSceneMain] = scene
+		default:
+			return errors.New("Undefined or unloaded scene: " + string(s))
+		}
 	}
 	g.CurrentScene = scene
 	return nil
