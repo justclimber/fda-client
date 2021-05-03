@@ -13,38 +13,38 @@ type SceneStart struct {
 
 func newSceneStart() *SceneStart {
 	s := &SceneStart{}
-	s.stateUpdateFunc = s.stateUpdateLoadConfig(3 * time.Second)
+	s.stateUpdateFunc = s.loadConfigUpdate(3 * time.Second)
 	return s
 }
 
-func (s *SceneStart) stateUpdateLoadConfig(elapsed time.Duration) SceneStateUpdateFunc {
+func (s *SceneStart) loadConfigUpdate(elapsed time.Duration) SceneStateUpdateFunc {
 	return func(dt time.Duration) (SceneStateUpdateFunc, SceneStateDrawFunc, bool, error) {
 		elapsed -= dt
 		if elapsed <= 0 {
 			timeToConnect := 3 * time.Second
-			return s.stateUpdateServerConnecting(timeToConnect), s.stateDrawServerConnecting(timeToConnect), true, nil
+			return s.serverConnectingUpdate(timeToConnect), s.serverConnectingDraw(timeToConnect), true, nil
 		}
-		return s.stateUpdateLoadConfig(elapsed), s.stateDrawLoadConfig(elapsed), false, nil
+		return s.loadConfigUpdate(elapsed), s.loadConfigDraw(elapsed), false, nil
 	}
 }
 
-func (s *SceneStart) stateDrawLoadConfig(elapsed time.Duration) SceneStateDrawFunc {
+func (s *SceneStart) loadConfigDraw(elapsed time.Duration) SceneStateDrawFunc {
 	return func(screen *ebiten.Image) {
 		ebitenutil.DebugPrint(screen, fmt.Sprintf("Config loading... %.1f sec left", elapsed.Seconds()))
 	}
 }
 
-func (s *SceneStart) stateUpdateServerConnecting(elapsed time.Duration) SceneStateUpdateFunc {
+func (s *SceneStart) serverConnectingUpdate(elapsed time.Duration) SceneStateUpdateFunc {
 	return func(dt time.Duration) (SceneStateUpdateFunc, SceneStateDrawFunc, bool, error) {
 		elapsed -= dt
 		if elapsed <= 0 {
 			return s.SwitchToScene(GameSceneMain)
 		}
-		return s.stateUpdateServerConnecting(elapsed), s.stateDrawServerConnecting(elapsed), false, nil
+		return s.serverConnectingUpdate(elapsed), s.serverConnectingDraw(elapsed), false, nil
 	}
 }
 
-func (s *SceneStart) stateDrawServerConnecting(elapsed time.Duration) SceneStateDrawFunc {
+func (s *SceneStart) serverConnectingDraw(elapsed time.Duration) SceneStateDrawFunc {
 	return func(screen *ebiten.Image) {
 		ebitenutil.DebugPrint(screen, fmt.Sprintf("Server connecting... %.1f sec left", elapsed.Seconds()))
 	}
