@@ -7,13 +7,13 @@ import (
 
 type Assets struct {
 	NineSlices map[NineSlicesEnum]*image.NineSlice
-	Fonts      map[FontsEnum]*font.Face
+	Fonts      map[FontsEnum]font.Face
 }
 
 func NewAssets() *Assets {
 	return &Assets{
 		NineSlices: map[NineSlicesEnum]*image.NineSlice{},
-		Fonts:      map[FontsEnum]*font.Face{},
+		Fonts:      map[FontsEnum]font.Face{},
 	}
 }
 

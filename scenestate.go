@@ -60,3 +60,7 @@ func (s *SceneState) SwitchToScene(newScene SceneID) (
 func (s *SceneState) error(msg string, err error) (SceneStateUpdateFunc, SceneStateDrawFunc, bool, error) {
 	return nil, nil, false, fmt.Errorf("%s: %w", msg, err)
 }
+
+func (s *SceneState) staySameState() (SceneStateUpdateFunc, SceneStateDrawFunc, bool, error) {
+	return nil, nil, false, nil
+}

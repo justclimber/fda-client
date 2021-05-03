@@ -1,4 +1,15 @@
 {
+  "fonts": {
+    "default": {
+      "face_file": "NotoSans-Regular.ttf",
+      "size": 20
+    },
+
+    "code": {
+      "face_file": "DroidSans.ttf",
+      "size": 20
+    }
+  },
   "style": {
     "windows_panel": {
       "width": 200,

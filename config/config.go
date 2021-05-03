@@ -6,9 +6,14 @@ import (
 )
 
 type Config struct {
-	//FontNames map[FontsEnum]string `json:"font_names"`
-	Style     Style                `json:"style"`
-	Server    Server               `json:"server"`
+	Fonts  map[FontsEnum]Font `json:"fonts"`
+	Style  Style              `json:"style"`
+	Server Server             `json:"server"`
+}
+
+type Font struct {
+	FaceFile string  `json:"face_file"`
+	Size     float64 `json:"size"`
 }
 
 type Style struct {

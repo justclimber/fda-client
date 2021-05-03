@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
@@ -14,6 +15,7 @@ import (
 
 const configFileName = "config.json"
 const imgsDirPath = "assets/images/"
+const fontsDirPath = "assets/fonts/"
 
 type SceneStart struct {
 	SceneState
@@ -46,14 +48,14 @@ func (s *SceneStart) loadConfigUpdate() SceneStateUpdateFunc {
 	}
 }
 
-func (s *SceneStart) loadAssetsUpdate(imgsLoaded int, fontsLoaded int, log []string) SceneStateUpdateFunc {
+func (s *SceneStart) loadAssetsUpdate(imgIndex int, fontIndex int, log []string) SceneStateUpdateFunc {
 	return func(dt time.Duration) (SceneStateUpdateFunc, SceneStateDrawFunc, bool, error) {
-		if imgsLoaded == len(config.GetAvailableImages()) {
+		if imgIndex == len(config.GetAvailableImages()) && fontIndex == len(config.GetAvailableFonts()) {
 			duration := 3 * time.Second
 			return s.serverConnectingUpdate(duration), s.serverConnectingDraw(duration), true, nil
 		}
-		if imgsLoaded < len(config.GetAvailableImages()) {
-			imgToLoad := config.GetAvailableImages()[imgsLoaded]
+		if imgIndex < len(config.GetAvailableImages()) {
+			imgToLoad := config.GetAvailableImages()[imgIndex]
 			filePath := imgsDirPath + string(imgToLoad) + ".png"
 			// @todo: get width and height from config
 			img, err := loadImageNineSlice(filePath, 5, 5)
@@ -61,10 +63,27 @@ func (s *SceneStart) loadAssetsUpdate(imgsLoaded int, fontsLoaded int, log []str
 				return s.error("loading image", err)
 			}
 			s.assets.NineSlices[imgToLoad] = img
-			log = append(log, string(imgToLoad) + " loaded")
-			imgsLoaded++
+			log = append(log, "image "+string(imgToLoad)+" loaded")
+			imgIndex++
+			return s.loadAssetsUpdate(imgIndex, fontIndex, log), s.loadDraw(log), false, nil
 		}
-		return s.loadAssetsUpdate(imgsLoaded, fontsLoaded, log), s.loadDraw(log), false, nil
+
+		if fontIndex < len(config.GetAvailableFonts()) {
+			fontToLoad := config.GetAvailableFonts()[fontIndex]
+			fInfo, ok := s.config.Fonts[fontToLoad]
+			if !ok {
+				return s.error("inconsistent config for fonts", errors.New("need config for "+string(fontToLoad)))
+			}
+			face, err := loadFont(fontsDirPath+fInfo.FaceFile, fInfo.Size)
+			if err != nil {
+				return s.error("loading font "+string(fontToLoad), err)
+			}
+			s.assets.Fonts[fontToLoad] = face
+			log = append(log, "font "+string(fontToLoad)+" loaded")
+			fontIndex++
+			return s.loadAssetsUpdate(imgIndex, fontIndex, log), s.loadDraw(log), false, nil
+		}
+		return s.staySameState()
 	}
 }
 
