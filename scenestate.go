@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"github.com/hajimehoshi/ebiten/v2"
 	"time"
 )
@@ -54,4 +55,8 @@ func (s *SceneState) SwitchToScene(newScene SceneID) (
 ) {
 	s.switchToScene = &newScene
 	return nil, nil, false, nil
+}
+
+func (s *SceneState) error(msg string, err error) (SceneStateUpdateFunc, SceneStateDrawFunc, bool, error) {
+	return nil, nil, false, fmt.Errorf("%s: %w", msg, err)
 }

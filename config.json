@@ -1,0 +1,17 @@
+{
+  "style": {
+    "windows_panel": {
+      "width": 200,
+      "padding": {
+        "Left": 5,
+        "Top": 5,
+        "Right": 5,
+        "Bottom": 5
+      }
+    }
+  },
+  "server": {
+    "ip": "127.0.0.1",
+    "port": 4321
+  }
+}

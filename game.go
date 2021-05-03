@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/justclimber/fda-client/config"
 	"time"
 )
 
@@ -22,6 +23,8 @@ type Game struct {
 	CurrentScene Scene
 	scenes       map[SceneID]Scene
 	lastTime     time.Time
+	assets       *config.Assets
+	config       *config.Config
 }
 
 func (g *Game) Update() error {
@@ -49,6 +52,7 @@ func (g *Game) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeigh
 func NewGame() *Game {
 	g := &Game{
 		lastTime: time.Now(),
+		assets: config.NewAssets(),
 	}
 	g.LoadScenes()
 	if err := g.SwitchScene(GameSceneStart); err != nil {
@@ -59,8 +63,8 @@ func NewGame() *Game {
 
 func (g *Game) LoadScenes() {
 	g.scenes = make(map[SceneID]Scene)
-	g.scenes[GameSceneStart] = newSceneStart()
-	g.scenes[GameSceneMain] = newSceneMain()
+	g.scenes[GameSceneStart] = newSceneStart(g.assets, g.config)
+	g.scenes[GameSceneMain] = newSceneMain(g.assets, g.config)
 }
 
 func (g *Game) SwitchScene(s SceneID) error {

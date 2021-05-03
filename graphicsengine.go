@@ -10,7 +10,7 @@ func RunOnEbiten(game *Game)  {
 	ebiten.SetWindowTitle("FDA Game Prototype")
 	ebiten.SetVsyncEnabled(false)
 	ebiten.SetWindowResizable(true)
-
+	//ebiten.SetMaxTPS(1)
 
 	err := ebiten.RunGame(game)
 	if err != nil {
