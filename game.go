@@ -30,7 +30,10 @@ func (g *Game) Update() error {
 	g.lastTime = now
 	switchToScene, err := g.CurrentScene.Update(dt)
 	if switchToScene != nil {
-		g.SwitchScene(*switchToScene)
+		err = g.SwitchScene(*switchToScene)
+		if err != nil {
+			return err
+		}
 	}
 	return err
 }
