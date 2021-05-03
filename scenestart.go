@@ -19,15 +19,11 @@ const fontsDirPath = "assets/fonts/"
 
 type SceneStart struct {
 	SceneState
-	assets *config.Assets
-	config *config.Config
+	g *Game
 }
 
-func newSceneStart(assets *config.Assets, config *config.Config) *SceneStart {
-	s := &SceneStart{
-		assets: assets,
-		config: config,
-	}
+func newSceneStart(g *Game) *SceneStart {
+	s := &SceneStart{g: g}
 	s.stateUpdateFunc = s.loadConfigUpdate()
 	return s
 }
@@ -43,7 +39,7 @@ func (s *SceneStart) loadConfigUpdate() SceneStateUpdateFunc {
 		if err != nil {
 			return s.error("decoding json config file", err)
 		}
-		s.config = &c
+		s.g.config = &c
 		log := []string{"config loaded"}
 		return s.loadAssetsUpdate(0, 0, log), s.loadDraw(log), false, nil
 	}
@@ -52,7 +48,7 @@ func (s *SceneStart) loadConfigUpdate() SceneStateUpdateFunc {
 func (s *SceneStart) loadAssetsUpdate(imgIndex int, fontIndex int, log []string) SceneStateUpdateFunc {
 	return func(dt time.Duration) (SceneStateUpdateFunc, SceneStateDrawFunc, bool, error) {
 		if imgIndex == len(config.GetAvailableImages()) && fontIndex == len(config.GetAvailableFonts()) {
-			duration := 1 * time.Millisecond
+			duration := 2 * time.Millisecond
 			return s.serverConnectingUpdate(duration), s.serverConnectingDraw(duration), true, nil
 		}
 		if imgIndex < len(config.GetAvailableImages()) {
@@ -63,7 +59,7 @@ func (s *SceneStart) loadAssetsUpdate(imgIndex int, fontIndex int, log []string)
 			if err != nil {
 				return s.error("loading image", err)
 			}
-			s.assets.NineSlices[imgToLoad] = img
+			s.g.assets.NineSlices[imgToLoad] = img
 			log = append(log, "image "+string(imgToLoad)+" loaded")
 			imgIndex++
 			return s.loadAssetsUpdate(imgIndex, fontIndex, log), s.loadDraw(log), false, nil
@@ -71,7 +67,7 @@ func (s *SceneStart) loadAssetsUpdate(imgIndex int, fontIndex int, log []string)
 
 		if fontIndex < len(config.GetAvailableFonts()) {
 			fontToLoad := config.GetAvailableFonts()[fontIndex]
-			fInfo, ok := s.config.Fonts[fontToLoad]
+			fInfo, ok := s.g.config.Fonts[fontToLoad]
 			if !ok {
 				return s.error("inconsistent config for fonts", errors.New("need config for "+string(fontToLoad)))
 			}
@@ -79,7 +75,7 @@ func (s *SceneStart) loadAssetsUpdate(imgIndex int, fontIndex int, log []string)
 			if err != nil {
 				return s.error("loading font "+string(fontToLoad), err)
 			}
-			s.assets.Fonts[fontToLoad] = face
+			s.g.assets.Fonts[fontToLoad] = face
 			log = append(log, "font "+string(fontToLoad)+" loaded")
 			fontIndex++
 			return s.loadAssetsUpdate(imgIndex, fontIndex, log), s.loadDraw(log), false, nil
@@ -98,7 +94,8 @@ func (s *SceneStart) serverConnectingUpdate(elapsed time.Duration) SceneStateUpd
 	return func(dt time.Duration) (SceneStateUpdateFunc, SceneStateDrawFunc, bool, error) {
 		elapsed -= dt
 		if elapsed <= 0 {
-			return s.SwitchToScene(GameSceneMain)
+			err := s.g.SwitchScene(GameSceneMain)
+			return nil, nil, false, err
 		}
 		return s.serverConnectingUpdate(elapsed), s.serverConnectingDraw(elapsed), false, nil
 	}

@@ -23,8 +23,8 @@ func (s *SceneMain) setupUI() {
 	rootContainer.AddChild(widget.NewText(
 		widget.TextOpts.Text(
 			"UserHeader",
-			s.assets.Fonts[config.FntDefault],
-			s.config.Style.WindowsPanel.FontColor,
+			s.g.assets.Fonts[config.FntDefault],
+			s.g.config.Style.WindowsPanel.FontColor,
 		),
 	))
 
@@ -50,7 +50,7 @@ func (s *SceneMain) setupUI() {
 	rootContainer.AddChild(footerContainer)
 
 	footerText := widget.NewText(
-		widget.TextOpts.Text("footer", s.assets.Fonts[config.FntDefault], s.config.Style.WindowsPanel.FontColor))
+		widget.TextOpts.Text("footer", s.g.assets.Fonts[config.FntDefault], s.g.config.Style.WindowsPanel.FontColor))
 
 	footerContainer.AddChild(footerText)
 }

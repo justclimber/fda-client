@@ -11,7 +11,7 @@ type SceneID string
 
 type Scene interface {
 	Draw(screen *ebiten.Image)
-	Update(dt time.Duration) (*SceneID, error)
+	Update(dt time.Duration) error
 }
 
 const (
@@ -31,13 +31,7 @@ func (g *Game) Update() error {
 	now := time.Now()
 	dt := now.Sub(g.lastTime)
 	g.lastTime = now
-	switchToScene, err := g.CurrentScene.Update(dt)
-	if switchToScene != nil {
-		err = g.SwitchScene(*switchToScene)
-		if err != nil {
-			return err
-		}
-	}
+	err := g.CurrentScene.Update(dt)
 	return err
 }
 
@@ -63,21 +57,14 @@ func NewGame() *Game {
 
 func (g *Game) LoadScenes() {
 	g.scenes = make(map[SceneID]Scene)
-	g.scenes[GameSceneStart] = newSceneStart(g.assets, g.config)
+	g.scenes[GameSceneStart] = newSceneStart(g)
+	g.scenes[GameSceneMain] = newSceneMain(g)
 }
 
 func (g *Game) SwitchScene(s SceneID) error {
-	scene, loaded := g.scenes[s]
-	if !loaded {
-		switch s {
-		case GameSceneMain:
-			// @fixme: ugly hack!
-			g.config = g.scenes[GameSceneStart].(*SceneStart).config
-			scene = newSceneMain(g.assets, g.config)
-			g.scenes[GameSceneMain] = scene
-		default:
-			return errors.New("Undefined or unloaded scene: " + string(s))
-		}
+	scene, ok := g.scenes[s]
+	if !ok {
+		return errors.New("Undefined or unloaded scene: " + string(s))
 	}
 	g.CurrentScene = scene
 	return nil

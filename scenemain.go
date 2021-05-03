@@ -4,23 +4,18 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 	"github.com/justclimber/ebitenui"
-	"github.com/justclimber/fda-client/config"
 	"log"
 	"time"
 )
 
 type SceneMain struct {
 	SceneState
-	assets *config.Assets
-	config *config.Config
+	g *Game
 	ui *ebitenui.UI
 }
 
-func newSceneMain(assets *config.Assets, config *config.Config) *SceneMain {
-	s := &SceneMain{
-		assets: assets,
-		config: config,
-	}
+func newSceneMain(g *Game) *SceneMain {
+	s := &SceneMain{g: g}
 	s.stateUpdateFunc = s.setupUpdate
 	s.stateDrawFunc = s.idleDraw
 
