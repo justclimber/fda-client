@@ -2,9 +2,10 @@ package main
 
 import (
 	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
+	"github.com/hajimehoshi/ebiten/v2/inpututil"
 	"github.com/justclimber/ebitenui"
-	"log"
+	"github.com/justclimber/ebitenui/widget"
+	"sync"
 	"time"
 )
 
@@ -12,30 +13,42 @@ type SceneMain struct {
 	SceneState
 	g *Game
 	ui *ebitenui.UI
+	init sync.Once
 }
 
 func newSceneMain(g *Game) *SceneMain {
 	s := &SceneMain{g: g}
-	s.stateUpdateFunc = s.setupUpdate
+	s.stateUpdateFunc = s.idleUpdate
 	s.stateDrawFunc = s.idleDraw
 
 	return s
 }
 
-func (s *SceneMain) setupUpdate(dt time.Duration) (SceneStateUpdateFunc, SceneStateDrawFunc, bool, error) {
-	s.setupUI()
-	log.Print(123123)
-	return s.idleUpdate, s.idleDraw, true, nil
+func (s *SceneMain) Setup() error {
+	var err error
+	s.init.Do(func() {
+		err = s.setupUI()
+	})
+	return err
 }
 
 func (s *SceneMain) idleUpdate(dt time.Duration) (SceneStateUpdateFunc, SceneStateDrawFunc, bool, error) {
+	if inpututil.IsKeyJustPressed(ebiten.KeyF1) {
+		s.ui.SetDebugMode(widget.DebugModeNone)
+	}
+	if inpututil.IsKeyJustPressed(ebiten.KeyF2) {
+		s.ui.SetDebugMode(widget.DebugModeBorderOnMouseOver)
+	}
+	if inpututil.IsKeyJustPressed(ebiten.KeyF3) {
+		s.ui.SetDebugMode(widget.DebugModeBorderAlwaysShow)
+	}
+	if inpututil.IsKeyJustPressed(ebiten.KeyF4) {
+		s.ui.SetDebugMode(widget.DebugModeInputLayersAlwaysShow)
+	}
 	s.ui.Update()
 	return s.staySameState()
 }
 
 func (s *SceneMain) idleDraw(screen *ebiten.Image) {
-	ebitenutil.DebugPrint(screen, "Yay! we in the game now!")
-	if s.ui != nil {
-		s.ui.Draw(screen)
-	}
+	s.ui.Draw(screen)
 }

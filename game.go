@@ -12,6 +12,7 @@ type SceneID string
 type Scene interface {
 	Draw(screen *ebiten.Image)
 	Update(dt time.Duration) error
+	Setup() error
 }
 
 const (
@@ -46,7 +47,7 @@ func (g *Game) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeigh
 func NewGame() *Game {
 	g := &Game{
 		lastTime: time.Now(),
-		assets: config.NewAssets(),
+		assets:   config.NewAssets(),
 	}
 	g.LoadScenes()
 	if err := g.SwitchScene(GameSceneStart); err != nil {
@@ -65,6 +66,10 @@ func (g *Game) SwitchScene(s SceneID) error {
 	scene, ok := g.scenes[s]
 	if !ok {
 		return errors.New("Undefined or unloaded scene: " + string(s))
+	}
+	err := scene.Setup()
+	if err != nil {
+		return err
 	}
 	g.CurrentScene = scene
 	return nil

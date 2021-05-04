@@ -28,6 +28,10 @@ func newSceneStart(g *Game) *SceneStart {
 	return s
 }
 
+func (s *SceneStart) Setup() error {
+	return nil
+}
+
 func (s *SceneStart) loadConfigUpdate() SceneStateUpdateFunc {
 	return func(dt time.Duration) (SceneStateUpdateFunc, SceneStateDrawFunc, bool, error) {
 		jsonfile, err := ioutil.ReadFile(configFileName)

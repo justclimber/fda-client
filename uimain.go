@@ -6,7 +6,7 @@ import (
 	"github.com/justclimber/fda-client/config"
 )
 
-func (s *SceneMain) setupUI() {
+func (s *SceneMain) setupUI() error {
 	rootContainer := widget.NewContainer(
 		"root",
 		widget.ContainerOpts.Layout(widget.NewGridLayout(
@@ -53,4 +53,6 @@ func (s *SceneMain) setupUI() {
 		widget.TextOpts.Text("footer", s.g.assets.Fonts[config.FntDefault], s.g.config.Style.WindowsPanel.FontColor))
 
 	footerContainer.AddChild(footerText)
+
+	return nil
 }
