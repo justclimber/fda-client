@@ -20,14 +20,20 @@ func NewAssets() *Assets {
 type NineSlicesEnum string
 
 const (
-	ImgWindow NineSlicesEnum = "window"
-	ImgButton NineSlicesEnum = "button"
+	ImgWindow       NineSlicesEnum = "window"
+	ImgButton       NineSlicesEnum = "button"
+	ImgListIdle     NineSlicesEnum = "list-idle"
+	ImgListDisabled NineSlicesEnum = "list-disabled"
+	ImgListMask     NineSlicesEnum = "list-mask"
 )
 
 func GetAvailableImages() []NineSlicesEnum {
 	return []NineSlicesEnum{
 		ImgWindow,
 		ImgButton,
+		ImgListIdle,
+		ImgListDisabled,
+		ImgListMask,
 	}
 }
 
