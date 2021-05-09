@@ -5,7 +5,6 @@ go 1.16
 replace github.com/justclimber/ebitenui => ../ebitenui/
 
 require (
-	github.com/davecgh/go-spew v1.1.1
 	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0
 	github.com/hajimehoshi/ebiten/v2 v2.1.0
 	github.com/justclimber/ebitenui v0.0.0-20210501081741-62b0ef890536

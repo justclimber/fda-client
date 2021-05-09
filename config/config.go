@@ -2,6 +2,7 @@ package config
 
 import (
 	"github.com/justclimber/ebitenui/widget"
+	"golang.org/x/image/colornames"
 	"image/color"
 	"net"
 )
@@ -35,4 +36,30 @@ type Server struct {
 type Tst struct {
 	Ip   net.IP `json:"ip"`
 	Port int    `json:"port"`
+}
+
+func GetConfig() Config {
+	return Config{
+		Fonts: map[FontsEnum]Font{
+			FntDefault: {
+				FaceFile: "NotoSans-Regular.ttf",
+				Size:     20,
+			},
+			FntCode: {
+				FaceFile: "DroidSans.ttf",
+				Size:     20,
+			},
+		},
+		Style: Style{
+			WindowsPanel: WindowsPanel{
+				Width:     2000,
+				Padding:   widget.NewInsetsSimple(5),
+				FontColor: colornames.White,
+			},
+		},
+		Server: Server{
+			Ip:   net.ParseIP("127.0.0.1"),
+			Port: 4321,
+		},
+	}
 }

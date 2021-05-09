@@ -1,14 +1,12 @@
 package main
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 	"github.com/justclimber/fda-client/config"
 	_ "image/png"
-	"io/ioutil"
 	"strings"
 	"time"
 )
@@ -34,15 +32,7 @@ func (s *SceneStart) Setup() error {
 
 func (s *SceneStart) loadConfigUpdate() SceneStateUpdateFunc {
 	return func(dt time.Duration) (SceneStateUpdateFunc, SceneStateDrawFunc, bool, error) {
-		jsonfile, err := ioutil.ReadFile(configFileName)
-		if err != nil {
-			return s.error("loading config file", err)
-		}
-		var c config.Config
-		err = json.Unmarshal(jsonfile, &c)
-		if err != nil {
-			return s.error("decoding json config file", err)
-		}
+		c:= config.GetConfig()
 		s.g.config = &c
 		log := []string{"config loaded"}
 		return s.loadAssetsUpdate(0, 0, log), s.loadDraw(log), false, nil
