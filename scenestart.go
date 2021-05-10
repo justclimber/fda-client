@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
+	"github.com/justclimber/ebitenui/image"
 	"github.com/justclimber/fda-client/config"
 	_ "image/png"
 	"strings"
@@ -32,8 +33,7 @@ func (s *SceneStart) Setup() error {
 
 func (s *SceneStart) loadConfigUpdate() SceneStateUpdateFunc {
 	return func(dt time.Duration) (SceneStateUpdateFunc, SceneStateDrawFunc, bool, error) {
-		c:= config.GetConfig()
-		s.g.config = &c
+		s.g.config = config.GetConfig()
 		log := []string{"config loaded"}
 		return s.loadAssetsUpdate(0, 0, log), s.loadDraw(log), false, nil
 	}
@@ -48,12 +48,31 @@ func (s *SceneStart) loadAssetsUpdate(imgIndex int, fontIndex int, log []string)
 		if imgIndex < len(config.GetAvailableImages()) {
 			imgToLoad := config.GetAvailableImages()[imgIndex]
 			filePath := imgsDirPath + string(imgToLoad) + ".png"
-			// @todo: get width and height from config
-			img, err := loadImageNineSlice(filePath, 5, 5)
-			if err != nil {
-				return s.error("loading image", err)
+
+			nineSlicesParams, ok := s.g.config.NineSlicesParams[imgToLoad]
+			if !ok {
+				return s.error(
+					"loading asset img",
+					fmt.Errorf("config don't have NineSliceParams for '%s'", string(imgToLoad)),
+				)
 			}
-			s.g.assets.NineSlices[imgToLoad] = img
+
+			i, _, err := ebitenutil.NewImageFromFile(filePath)
+			if err != nil {
+				return s.error("loading asset img from file " + filePath, err)
+			}
+
+			if nineSlicesParams.Centered {
+				w, h := i.Size()
+				centerWidth := nineSlicesParams.W[0]
+				centerHeight := nineSlicesParams.H[0]
+				s.g.assets.NineSlices[imgToLoad] = image.NewNineSlice(i,
+					[3]int{(w - centerWidth) / 2, centerWidth, w - (w-centerWidth)/2 - centerWidth},
+					[3]int{(h - centerHeight) / 2, centerHeight, h - (h-centerHeight)/2 - centerHeight})
+			} else {
+				s.g.assets.NineSlices[imgToLoad] = image.NewNineSlice(i, nineSlicesParams.W, nineSlicesParams.H)
+			}
+
 			log = append(log, "image "+string(imgToLoad)+" loaded")
 			imgIndex++
 			return s.loadAssetsUpdate(imgIndex, fontIndex, log), s.loadDraw(log), false, nil
