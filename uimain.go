@@ -13,17 +13,14 @@ func (s *SceneMain) setupUI() error {
 		widget.ContainerOpts.Layout(widget.NewGridLayout(
 			widget.GridLayoutOpts.Columns(1),
 			widget.GridLayoutOpts.Stretch([]bool{true}, []bool{false, true, false}),
-			widget.GridLayoutOpts.Padding(widget.Insets{
-				Top:    20,
-				Bottom: 20,
-			}),
+			widget.GridLayoutOpts.Padding(widget.NewInsetsSimple(20)),
 			widget.GridLayoutOpts.Spacing(0, 20))),
 	)
 	s.ui = &ebitenui.UI{Container: rootContainer}
 
 	rootContainer.AddChild(widget.NewText(
 		widget.TextOpts.Text(
-			"UserHeader",
+			"Header",
 			s.g.assets.Fonts[config.FntDefault],
 			s.g.config.Style.WindowsPanel.FontColor,
 		),
@@ -31,27 +28,17 @@ func (s *SceneMain) setupUI() error {
 
 	mainContainer := widget.NewContainer(
 		"main",
-		widget.ContainerOpts.Layout(widget.NewGridLayout(
-			widget.GridLayoutOpts.Padding(widget.Insets{
-				Left:  25,
-				Right: 25,
-			}),
-			widget.GridLayoutOpts.Columns(2),
-			widget.GridLayoutOpts.Stretch([]bool{false, true}, []bool{true}),
-			widget.GridLayoutOpts.Spacing(20, 0),
-		)))
+		widget.ContainerOpts.Layout(widget.NewRowLayout(
+			widget.RowLayoutOpts.Direction(widget.DirectionHorizontal),
+		)),
+	)
 	rootContainer.AddChild(mainContainer)
 
-	footerContainer := widget.NewContainer("footer", widget.ContainerOpts.Layout(widget.NewRowLayout(
-		widget.RowLayoutOpts.Padding(widget.Insets{
-			Left:  25,
-			Right: 25,
-		}),
-	)))
+	footerContainer := widget.NewContainer("footer", widget.ContainerOpts.Layout(widget.NewRowLayout()))
 	rootContainer.AddChild(footerContainer)
 
 	footerText := widget.NewText(
-		widget.TextOpts.Text("footer", s.g.assets.Fonts[config.FntDefault], s.g.config.Style.WindowsPanel.FontColor))
+		widget.TextOpts.Text("Footer", s.g.assets.Fonts[config.FntDefault], s.g.config.Style.WindowsPanel.FontColor))
 
 	footerContainer.AddChild(footerText)
 
@@ -90,13 +77,16 @@ func (s *SceneMain) setupUI() error {
 		widget.ListOpts.ScrollContainerOpts(widget.ScrollContainerOpts.Image(listScrollContainerImages)),
 		widget.ListOpts.EntryColor(listColors),
 		widget.ListOpts.EntryFontFace(s.g.assets.Fonts[config.FntDefault]),
-		widget.ListOpts.EntryTextPadding(widget.NewInsetsSimple(5)),
+		widget.ListOpts.EntryTextPadding(widget.NewInsetsSimple(15)),
 		widget.ListOpts.HideHorizontalSlider(),
 		widget.ListOpts.HideVerticalSlider(),
 		widget.ListOpts.IsMulti(),
 		widget.ListOpts.EntrySelectedHandler(func(args *widget.ListEntrySelectedEventArgs) {
 			am.appToggle(args.Entry.(appLink).app)
 		}),
+		widget.ListOpts.ContainerOpts(widget.ContainerOpts.WidgetOpts(widget.WidgetOpts.LayoutData(widget.RowLayoutData{
+			Stretch: true,
+		}))),
 	)
 	mainContainer.AddChild(appList)
 
@@ -130,6 +120,7 @@ func (s *SceneMain) testApp() *app {
 		})),
 		widget.ButtonOpts.Image(buttonImage),
 		widget.ButtonOpts.Text("123 button", s.g.assets.Fonts[config.FntDefault], buttonColor),
+		widget.ButtonOpts.TextPadding(widget.Insets{7, 15, 15, 7}),
 	)
 	c.AddChild(b)
 
