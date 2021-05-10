@@ -76,7 +76,6 @@ func (s *SceneMain) setupUI() error {
 		DisabledSelectedBackground: colornames.Darkgray,
 	}
 
-	// @todo: ninceslice insets
 	listScrollContainerImages := &widget.ScrollContainerImage{
 		Idle:     s.g.assets.NineSlices[config.ImgListIdle],
 		Disabled: s.g.assets.NineSlices[config.ImgListDisabled],
