@@ -34,7 +34,7 @@ type CodeEditor struct {
 	image           *BgImage
 	colors          *Colors
 	padding         widget.Insets
-	face            font.Face
+	font            CodeFont
 	repeatDelay     time.Duration
 	repeatInterval  time.Duration
 	placeholderText string
@@ -182,9 +182,9 @@ func (o Options) Padding(i widget.Insets) Opt {
 
 func (o Options) Face(f font.Face) Opt {
 	return func(t *CodeEditor) {
-		t.face = f
 		t.codeDrawer.font.face = f
 		t.codeDrawer.font.buildMetricsCache()
+		t.font = t.codeDrawer.font
 	}
 }
 
@@ -354,7 +354,6 @@ func (ce *CodeEditor) buildIndexForStatementsBlock(stmts *ast.StatementsBlock, l
 		}
 	}
 	return lineNumber
-	//spew.Dump(ce.Index)
 }
 
 func (ce *CodeEditor) commandState(cmd controlCommand, key ebiten.Key, delay time.Duration, timer *time.Timer, expired *atomic.Value) stateFunc {
@@ -417,18 +416,27 @@ func (ce *CodeEditor) doGoEnd() {
 
 func (ce *CodeEditor) doGoXY(x int, y int) {
 	p := img.Point{x, y}
-	if p.In(ce.widget.Rect) {
-		tr := ce.padding.Apply(ce.widget.Rect)
-		if x < tr.Min.X {
-			x = tr.Min.X
-		}
-		if x > tr.Max.X {
-			x = tr.Max.X
-		}
-
-		ce.cursorPosition.X = fontStringIndex([]rune(ce.Lines[ce.cursorPosition.Y]), ce.face, x-ce.scrollOffset-tr.Min.X)
-		ce.cursor.ResetBlinking()
+	if !p.In(ce.widget.Rect) {
+		return
 	}
+	// @todo: offsets
+	rect := ce.padding.Apply(ce.widget.Rect)
+	if x < rect.Min.X {
+		x = rect.Min.X
+	}
+	if x > rect.Max.X {
+		x = rect.Max.X
+	}
+	ce.cursorPosition.Y = int(math.Abs(math.Floor(float64(y-rect.Min.Y) / float64(ce.font.height))))
+
+	if ce.cursorPosition.Y > len(ce.Lines)-1 {
+		ce.cursorPosition.Y = len(ce.Lines) - 1
+	}
+	ce.cursorPosition.X = int(math.Floor(float64(x-rect.Min.X) / float64(ce.font.width)))
+	if ce.cursorPosition.X > len([]rune(ce.Lines[ce.cursorPosition.Y]))-1 {
+		ce.cursorPosition.X = len([]rune(ce.Lines[ce.cursorPosition.Y]))
+	}
+	ce.cursor.ResetBlinking()
 }
 
 func (ce *CodeEditor) doBackspace() {
@@ -546,7 +554,7 @@ func (ce *CodeEditor) drawTextAndCaret(screen *ebiten.Image, def widget.Deferred
 	cx := 0
 	if ce.focused {
 		sub := string([]rune(inputStr)[:ce.cursorPosition.X])
-		cx = fontAdvance(sub, ce.face)
+		cx = fontAdvance(sub, ce.font)
 
 		dx := tr.Min.X + ce.scrollOffset + cx + ce.cursor.Width + ce.padding.Right - rect.Max.X
 		if dx > 0 {
@@ -582,7 +590,7 @@ func (ce *CodeEditor) drawTextAndCaret(screen *ebiten.Image, def widget.Deferred
 			ce.cursor.Color = ce.colors.Cursor
 		}
 
-		cy := ce.face.Metrics().Height.Ceil() * ce.cursorPosition.Y
+		cy := ce.font.face.Metrics().Height.Ceil() * ce.cursorPosition.Y
 		tr = tr.Add(img.Point{cx, cy})
 		ce.cursor.SetLocation(tr)
 
@@ -604,60 +612,13 @@ func (ce *CodeEditor) createWidget() {
 	ce.cursor = NewCursor(append(ce.cursorOpts, CursorOpts.Color(ce.colors.Cursor))...)
 	ce.cursorOpts = nil
 
-	ce.text = widget.NewText(widget.TextOpts.Text("", ce.face, color.White))
+	ce.text = widget.NewText(widget.TextOpts.Text("", ce.font.face, color.White))
 
 	ce.mask = image.NewNineSliceColor(color.RGBA{255, 0, 255, 255})
 }
 
-func fontAdvance(s string, f font.Face) int {
-	_, a := font.BoundString(f, s)
-	return int(math.Round(fixedInt26_6ToFloat64(a)))
-}
-
-// fontStringIndex returns an index into r that corresponds closest to pixel position x
-// when string(r) is drawn using f. Pixel position x==0 corresponds to r[0].
-func fontStringIndex(r []rune, f font.Face, x int) int {
-	start := 0
-	end := len(r)
-	p := 0
-loop:
-	for {
-		p = start + (end-start)/2
-		sub := string(r[:p])
-		a := fontAdvance(sub, f)
-
-		switch {
-		// x is right of advance
-		case x > a:
-			if p == start {
-				break loop
-			}
-
-			start = p
-
-			// x is left of advance
-		case x < a:
-			if end == p {
-				break loop
-			}
-
-			end = p
-
-			// x matches advance exactly
-		default:
-			return p
-		}
-	}
-
-	if len(r) > 0 {
-		a1 := fontAdvance(string(r[:p]), f)
-		a2 := fontAdvance(string(r[:p+1]), f)
-		if math.Abs(float64(x-a2)) < math.Abs(float64(x-a1)) {
-			p++
-		}
-	}
-
-	return p
+func fontAdvance(s string, f CodeFont) int {
+	return len(s) * f.width
 }
 
 //goland:noinspection GoSnakeCaseUsage
