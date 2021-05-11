@@ -80,7 +80,7 @@ func (s *SceneMain) setupUI() error {
 		widget.ListOpts.ScrollContainerOpts(widget.ScrollContainerOpts.Image(listScrollContainerImages)),
 		widget.ListOpts.EntryColor(listColors),
 		widget.ListOpts.EntryFontFace(s.g.assets.Fonts[config.FntDefault]),
-		widget.ListOpts.EntryTextPadding(widget.NewInsetsSimple(15)),
+		widget.ListOpts.EntryTextPadding(widget.Insets{5, 18, 7, 5}),
 		widget.ListOpts.HideHorizontalSlider(),
 		widget.ListOpts.HideVerticalSlider(),
 		widget.ListOpts.IsMulti(),
