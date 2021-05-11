@@ -69,7 +69,7 @@ func (cd *CodeDrawer) draw(screen *ebiten.Image, code *ast.StatementsBlock, rect
 	if code == nil {
 		return
 	}
-	rect = rect.Add(img.Point{X: 300, Y: 30})
+	rect = rect.Add(img.Point{X: 150, Y: 23})
 	cd.reset(screen, rect.Min)
 	cd.drawStatementBlock(code)
 }

@@ -37,7 +37,6 @@ type CodeEditor struct {
 	face            font.Face
 	repeatDelay     time.Duration
 	repeatInterval  time.Duration
-	validationFunc  ValidationFunc
 	placeholderText string
 
 	init           *widget.MultiOnce
@@ -48,7 +47,7 @@ type CodeEditor struct {
 	renderBuf      *image.MaskedRenderBuffer
 	mask           *image.NineSlice
 	cursorPosition img.Point
-	state          codeEditorState
+	state          stateFunc
 	scrollOffset   int
 	focused        bool
 	lastInputText  string
@@ -78,9 +77,7 @@ type Colors struct {
 	DisabledCaret color.Color
 }
 
-type ValidationFunc func(newInputText string) bool
-
-type codeEditorState func() (codeEditorState, bool)
+type stateFunc func() (stateFunc, bool)
 
 type controlCommand int
 
@@ -197,12 +194,6 @@ func (o Options) RepeatInterval(i time.Duration) Opt {
 	}
 }
 
-func (o Options) Validation(f ValidationFunc) Opt {
-	return func(t *CodeEditor) {
-		t.validationFunc = f
-	}
-}
-
 func (o Options) Placeholder(s string) Opt {
 	return func(t *CodeEditor) {
 		t.placeholderText = s
@@ -261,8 +252,8 @@ func (ce *CodeEditor) Render(screen *ebiten.Image, def widget.DeferredRenderFunc
 	ce.renderTextAndCaret(screen, def, debugMode)
 }
 
-func (ce *CodeEditor) idleState(newKeyOrCommand bool) codeEditorState {
-	return func() (codeEditorState, bool) {
+func (ce *CodeEditor) idleState(newKeyOrCommand bool) stateFunc {
+	return func() (stateFunc, bool) {
 		if !ce.focused {
 			return ce.idleState(true), false
 		}
@@ -285,7 +276,7 @@ func (ce *CodeEditor) idleState(newKeyOrCommand bool) codeEditorState {
 	}
 }
 
-func checkForCommand(t *CodeEditor, newKeyOrCommand bool) codeEditorState {
+func checkForCommand(t *CodeEditor, newKeyOrCommand bool) stateFunc {
 	for key, cmd := range keyToCommand {
 		if !input.KeyPressed(key) {
 			continue
@@ -304,8 +295,8 @@ func checkForCommand(t *CodeEditor, newKeyOrCommand bool) codeEditorState {
 	return nil
 }
 
-func (ce *CodeEditor) charsInputState(c []rune) codeEditorState {
-	return func() (codeEditorState, bool) {
+func (ce *CodeEditor) charsInputState(c []rune) stateFunc {
+	return func() (stateFunc, bool) {
 		if !ce.widget.Disabled {
 			ce.doInsert(c)
 			ce.codeChanged()
@@ -326,7 +317,7 @@ func (ce *CodeEditor) codeChanged() {
 	}
 	ce.Code, err = p.Parse()
 	if err != nil {
-		//log.Printf("Parsing error: %s\n", err.Error())
+		log.Printf("Parsing error: %s\n", err.Error())
 	} else {
 		ce.buildIndex()
 	}
@@ -366,8 +357,8 @@ func (ce *CodeEditor) buildIndexForStatementsBlock(stmts *ast.StatementsBlock, l
 	//spew.Dump(ce.Index)
 }
 
-func (ce *CodeEditor) commandState(cmd controlCommand, key ebiten.Key, delay time.Duration, timer *time.Timer, expired *atomic.Value) codeEditorState {
-	return func() (codeEditorState, bool) {
+func (ce *CodeEditor) commandState(cmd controlCommand, key ebiten.Key, delay time.Duration, timer *time.Timer, expired *atomic.Value) stateFunc {
+	return func() (stateFunc, bool) {
 		if !input.KeyPressed(key) {
 			return ce.idleState(true), true
 		}
@@ -395,10 +386,6 @@ func (ce *CodeEditor) commandState(cmd controlCommand, key ebiten.Key, delay tim
 
 func (ce *CodeEditor) doInsert(c []rune) {
 	s := string(insertChars([]rune(ce.Lines[ce.cursorPosition.Y]), c, ce.cursorPosition.X))
-
-	if ce.validationFunc != nil && !ce.validationFunc(s) {
-		return
-	}
 
 	ce.Lines[ce.cursorPosition.Y] = s
 	ce.cursorPosition.X += len(c)
