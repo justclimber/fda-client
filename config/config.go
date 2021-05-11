@@ -59,6 +59,21 @@ func GetConfig() *Config {
 				W:        [3]int{26, 10, 23},
 				H:        [3]int{26, 10, 26},
 			},
+			ImgCodeEditorIdle: {
+				Centered: false,
+				W:        [3]int{9, 14, 6},
+				H:        [3]int{9, 14, 6},
+			},
+			ImgCodeEditorDisabled: {
+				Centered: false,
+				W:        [3]int{9, 14, 6},
+				H:        [3]int{9, 14, 6},
+			},
+			ImgCodeEditorHover: {
+				Centered: false,
+				W:        [3]int{9, 14, 6},
+				H:        [3]int{9, 14, 6},
+			},
 		},
 		Fonts: map[FontsEnum]Font{
 			FntDefault: {
@@ -66,7 +81,7 @@ func GetConfig() *Config {
 				Size:     20,
 			},
 			FntCode: {
-				FaceFile: "DroidSans.ttf",
+				FaceFile: "FiraCode-Regular.ttf",
 				Size:     20,
 			},
 		},

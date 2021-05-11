@@ -3,6 +3,7 @@ package config
 import (
 	"github.com/justclimber/ebitenui/image"
 	"github.com/justclimber/ebitenui/widget"
+	"github.com/justclimber/fda-client/codeeditor"
 	"golang.org/x/image/colornames"
 	"golang.org/x/image/font"
 )
@@ -23,11 +24,14 @@ func NewAssets() *Assets {
 type NineSlicesEnum string
 
 const (
-	ImgWindow       NineSlicesEnum = "window"
-	ImgButton       NineSlicesEnum = "button"
-	ImgListIdle     NineSlicesEnum = "list-idle"
-	ImgListDisabled NineSlicesEnum = "list-disabled"
-	ImgListMask     NineSlicesEnum = "list-mask"
+	ImgWindow             NineSlicesEnum = "window"
+	ImgButton             NineSlicesEnum = "button"
+	ImgListIdle           NineSlicesEnum = "list-idle"
+	ImgListDisabled       NineSlicesEnum = "list-disabled"
+	ImgListMask           NineSlicesEnum = "list-mask"
+	ImgCodeEditorIdle     NineSlicesEnum = "codeeditor-idle"
+	ImgCodeEditorDisabled NineSlicesEnum = "codeeditor-disabled"
+	ImgCodeEditorHover    NineSlicesEnum = "codeeditor-hover"
 )
 
 func GetAvailableImages() []NineSlicesEnum {
@@ -37,6 +41,9 @@ func GetAvailableImages() []NineSlicesEnum {
 		ImgListIdle,
 		ImgListDisabled,
 		ImgListMask,
+		ImgCodeEditorIdle,
+		ImgCodeEditorDisabled,
+		ImgCodeEditorHover,
 	}
 }
 
@@ -55,14 +62,16 @@ func GetAvailableFonts() []FontsEnum {
 }
 
 type Prefabs struct {
-	AppPanel AppPanel
-	Window   Window
+	AppPanel         AppPanel
+	Window           Window
+	CodeEditorPrefab CodeEditorPrefab
 }
 
 func NewPrefabs(assets *Assets, config *Config) Prefabs {
 	return Prefabs{
-		AppPanel: NewAppPanel(assets, config),
-		Window: NewWindow(assets, config),
+		AppPanel:         NewAppPanel(assets, config),
+		Window:           NewWindow(assets, config),
+		CodeEditorPrefab: NewCodeEditorPrefab(assets, config),
 	}
 }
 
@@ -129,18 +138,23 @@ func NewWindow(assets *Assets, config *Config) Window {
 }
 
 func (w Window) Make(title string, content widget.PreferredSizeLocateableWidget) *widget.Window {
+	content.GetWidget().LayoutData = widget.AnchorLayoutData{
+		StretchHorizontal:  true,
+		StretchVertical:    true,
+	}
+
 	c := widget.NewContainer(
-		"a "+title,
+		"app "+title,
 		widget.ContainerOpts.BackgroundImage(w.bgImage),
-		widget.ContainerOpts.Layout(widget.NewRowLayout(
-			widget.RowLayoutOpts.Direction(widget.DirectionVertical),
-			widget.RowLayoutOpts.Padding(widget.NewInsetsSimple(5)),
-			widget.RowLayoutOpts.Spacing(15),
+		widget.ContainerOpts.Layout(widget.NewAnchorLayout(
+			widget.AnchorLayoutOpts.Padding(widget.NewInsetsSimple(15)),
 		)),
 	)
 
+	c.AddChild(content)
+
 	mc := widget.NewContainer(
-		"a "+title+" movable",
+		"app "+title+" movable",
 		widget.ContainerOpts.WidgetOpts(widget.WidgetOpts.LayoutData(widget.RowLayoutData{
 			Stretch: true,
 		})),
@@ -157,10 +171,50 @@ func (w Window) Make(title string, content widget.PreferredSizeLocateableWidget)
 		widget.TextOpts.Position(widget.TextPositionStart, widget.TextPositionCenter),
 	))
 
-	c.AddChild(content)
-
 	return widget.NewWindow(
 		widget.WindowOpts.Movable(mc),
 		widget.WindowOpts.Contents(c),
 	)
+}
+
+type CodeEditorPrefab struct {
+	opts []codeeditor.Opt
+}
+
+func NewCodeEditorPrefab(assets *Assets, config *Config) CodeEditorPrefab {
+	bgImage := &codeeditor.BgImage{
+		Idle:     assets.NineSlices[ImgCodeEditorIdle],
+		Disabled: assets.NineSlices[ImgCodeEditorDisabled],
+	}
+
+	colors := &codeeditor.Colors{
+		Idle:          colornames.White,
+		Disabled:      colornames.Gray,
+		Cursor:        colornames.Aqua,
+		DisabledCaret: colornames.Gray,
+	}
+	return CodeEditorPrefab{
+		opts: []codeeditor.Opt{
+			codeeditor.Opts.WidgetOpts(widget.WidgetOpts.LayoutData(widget.RowLayoutData{
+				Stretch: true,
+			})),
+			codeeditor.Opts.BgImage(bgImage),
+			codeeditor.Opts.Placeholder("Enter code here"),
+			codeeditor.Opts.Face(assets.Fonts[FntCode]),
+			codeeditor.Opts.CursorOpts(
+				codeeditor.CursorOpts.Size(assets.Fonts[FntCode], 2),
+			),
+			codeeditor.Opts.Colors(colors),
+			codeeditor.Opts.Padding(widget.Insets{
+				Left:   13,
+				Right:  13,
+				Top:    7,
+				Bottom: 7,
+			}),
+		},
+	}
+}
+
+func (c CodeEditorPrefab) Make() *codeeditor.CodeEditor {
+	return codeeditor.NewCodeEditor(c.opts...)
 }

@@ -45,6 +45,7 @@ func (s *SceneMain) setupUI() error {
 	apps := []*app{
 		s.testButtonApp(),
 		s.testImageCallbackApp(),
+		s.codeEditorApp(),
 	}
 
 	am := newAppManager(
@@ -103,5 +104,15 @@ func (s *SceneMain) testImageCallbackApp() *app {
 	return &app{
 		title:   "test callback app",
 		content: g,
+	}
+}
+
+func (s *SceneMain) codeEditorApp() *app {
+	c := s.g.assets.Prefabs.CodeEditorPrefab.Make()
+	return &app{
+		title:   "Code Editor",
+		content: c,
+		w: 500,
+		h: 400,
 	}
 }
