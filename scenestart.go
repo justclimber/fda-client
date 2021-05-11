@@ -27,7 +27,7 @@ func newSceneStart(g *Game) *SceneStart {
 	return s
 }
 
-func (s *SceneStart) Setup() error {
+func (s *SceneStart) OnSwitch() error {
 	return nil
 }
 

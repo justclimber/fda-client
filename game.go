@@ -12,7 +12,7 @@ type SceneID string
 type Scene interface {
 	Draw(screen *ebiten.Image)
 	Update(dt time.Duration) error
-	Setup() error
+	OnSwitch() error
 }
 
 const (
@@ -67,7 +67,7 @@ func (g *Game) SwitchScene(s SceneID) error {
 	if !ok {
 		return errors.New("Undefined or unloaded scene: " + string(s))
 	}
-	err := scene.Setup()
+	err := scene.OnSwitch()
 	if err != nil {
 		return err
 	}

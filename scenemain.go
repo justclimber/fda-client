@@ -29,7 +29,7 @@ func newSceneMain(g *Game) *SceneMain {
 	return s
 }
 
-func (s *SceneMain) Setup() error {
+func (s *SceneMain) OnSwitch() error {
 	var err error
 	s.init.Do(func() {
 		err = s.setupUI()
