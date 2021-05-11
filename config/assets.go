@@ -56,11 +56,13 @@ func GetAvailableFonts() []FontsEnum {
 
 type Prefabs struct {
 	AppPanel AppPanel
+	Window   Window
 }
 
 func NewPrefabs(assets *Assets, config *Config) Prefabs {
 	return Prefabs{
 		AppPanel: NewAppPanel(assets, config),
+		Window: NewWindow(assets, config),
 	}
 }
 
@@ -111,4 +113,54 @@ func (a AppPanel) Make(
 		widget.ListOpts.EntryLabelFunc(labelFunc),
 		widget.ListOpts.EntrySelectedHandler(selectedHandler),
 	}...)...)
+}
+
+type Window struct {
+	bgImage    *image.NineSlice
+	WindowOpts []widget.WindowOpt
+	fontFace   font.Face
+}
+
+func NewWindow(assets *Assets, config *Config) Window {
+	return Window{
+		bgImage:  assets.NineSlices[ImgWindow],
+		fontFace: assets.Fonts[FntDefault],
+	}
+}
+
+func (w Window) Make(title string, content widget.PreferredSizeLocateableWidget) *widget.Window {
+	c := widget.NewContainer(
+		"a "+title,
+		widget.ContainerOpts.BackgroundImage(w.bgImage),
+		widget.ContainerOpts.Layout(widget.NewRowLayout(
+			widget.RowLayoutOpts.Direction(widget.DirectionVertical),
+			widget.RowLayoutOpts.Padding(widget.NewInsetsSimple(5)),
+			widget.RowLayoutOpts.Spacing(15),
+		)),
+	)
+
+	mc := widget.NewContainer(
+		"a "+title+" movable",
+		widget.ContainerOpts.WidgetOpts(widget.WidgetOpts.LayoutData(widget.RowLayoutData{
+			Stretch: true,
+		})),
+		widget.ContainerOpts.Layout(widget.NewRowLayout(
+			widget.RowLayoutOpts.Direction(widget.DirectionVertical)),
+		),
+	)
+
+	mc.AddChild(widget.NewText(
+		widget.TextOpts.WidgetOpts(widget.WidgetOpts.LayoutData(widget.RowLayoutData{
+			Stretch: true,
+		})),
+		widget.TextOpts.Text(title, w.fontFace, colornames.White),
+		widget.TextOpts.Position(widget.TextPositionStart, widget.TextPositionCenter),
+	))
+
+	c.AddChild(content)
+
+	return widget.NewWindow(
+		widget.WindowOpts.Movable(mc),
+		widget.WindowOpts.Contents(c),
+	)
 }

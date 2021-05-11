@@ -50,11 +50,10 @@ func (s *SceneMain) setupUI() error {
 	am := newAppManager(
 		s.ui,
 		apps,
-		s.g.assets.NineSlices[config.ImgWindow],
 		widget.NewInsetsSimple(5),
 		15,
-		s.g.assets.Fonts[config.FntDefault],
-		colornames.White)
+		s.g.assets.Prefabs.Window,
+	)
 
 	mainContainer.AddChild(s.g.assets.Prefabs.AppPanel.Make(
 		am.appLinks(),

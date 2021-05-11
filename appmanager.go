@@ -3,42 +3,32 @@ package main
 import (
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/justclimber/ebitenui"
-	"github.com/justclimber/ebitenui/image"
 	"github.com/justclimber/ebitenui/widget"
-	"golang.org/x/image/font"
+	"github.com/justclimber/fda-client/config"
 	gImage "image"
-	"image/color"
 )
 
 type appManager struct {
 	apps        []*app
 	ui          *ebitenui.UI
-	bgImage     *image.NineSlice
 	padding     widget.Insets
 	spacing     int
-	face        font.Face
-	headerColor color.Color
 }
 
 func newAppManager(
 	ui *ebitenui.UI,
 	apps []*app,
-	bgImage *image.NineSlice,
 	padding widget.Insets,
 	spacing int,
-	face font.Face,
-	headerColor color.Color,
+	windowPrefab config.Window,
 ) *appManager {
 	a := &appManager{
 		apps:        apps,
 		ui:          ui,
-		bgImage:     bgImage,
 		padding:     padding,
 		spacing:     spacing,
-		face:        face,
-		headerColor: headerColor,
 	}
-	a.initApps()
+	a.initApps(windowPrefab)
 	return a
 }
 
@@ -95,42 +85,9 @@ func (am *appManager) appToggle(app *app) {
 	app.openClosedState = stateOpen
 }
 
-func (am *appManager) initApps() {
+func (am *appManager) initApps(windowPrefab config.Window) {
 	for _, a := range am.apps {
-		c := widget.NewContainer(
-			"a "+a.title,
-			widget.ContainerOpts.BackgroundImage(am.bgImage),
-			widget.ContainerOpts.Layout(widget.NewRowLayout(
-				widget.RowLayoutOpts.Direction(widget.DirectionVertical),
-				widget.RowLayoutOpts.Padding(am.padding),
-				widget.RowLayoutOpts.Spacing(am.spacing),
-			)),
-		)
-
-		mc := widget.NewContainer(
-			"a "+a.title+" movable",
-			widget.ContainerOpts.WidgetOpts(widget.WidgetOpts.LayoutData(widget.RowLayoutData{
-				Stretch: true,
-			})),
-			widget.ContainerOpts.Layout(widget.NewRowLayout(
-				widget.RowLayoutOpts.Direction(widget.DirectionVertical)),
-			),
-		)
-
-		mc.AddChild(widget.NewText(
-			widget.TextOpts.WidgetOpts(widget.WidgetOpts.LayoutData(widget.RowLayoutData{
-				Stretch: true,
-			})),
-			widget.TextOpts.Text(a.title, am.face, am.headerColor),
-			widget.TextOpts.Position(widget.TextPositionStart, widget.TextPositionCenter),
-		))
-
-		c.AddChild(a.content)
-
-		a.window = widget.NewWindow(
-			widget.WindowOpts.Movable(mc),
-			widget.WindowOpts.Contents(c),
-		)
+		a.window = windowPrefab.Make(a.title, a.content)
 
 		ew, eh := ebiten.WindowSize()
 		a.initWindowBoundsAndPos(am, ew, eh)
