@@ -22,7 +22,7 @@ func (s *SceneMain) setupUI() error {
 		widget.TextOpts.Text(
 			"Header",
 			s.g.assets.Fonts[config.FntDefault],
-			s.g.config.Style.WindowsPanel.FontColor,
+			colornames.White,
 		),
 	))
 
@@ -38,7 +38,7 @@ func (s *SceneMain) setupUI() error {
 	rootContainer.AddChild(footerContainer)
 
 	footerText := widget.NewText(
-		widget.TextOpts.Text("Footer", s.g.assets.Fonts[config.FntDefault], s.g.config.Style.WindowsPanel.FontColor))
+		widget.TextOpts.Text("Footer", s.g.assets.Fonts[config.FntDefault], colornames.White))
 
 	footerContainer.AddChild(footerText)
 
