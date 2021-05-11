@@ -56,42 +56,15 @@ func (s *SceneMain) setupUI() error {
 		s.g.assets.Fonts[config.FntDefault],
 		colornames.White)
 
-	// @todo: get colors from config
-	listColors := &widget.ListEntryColor{
-		Unselected:                 colornames.Gray,
-		Selected:                   colornames.Aqua,
-		DisabledUnselected:         colornames.Gray,
-		DisabledSelected:           colornames.Gray,
-		SelectedBackground:         colornames.Darkgray,
-		DisabledSelectedBackground: colornames.Darkgray,
-	}
-
-	listScrollContainerImages := &widget.ScrollContainerImage{
-		Idle:     s.g.assets.NineSlices[config.ImgListIdle],
-		Disabled: s.g.assets.NineSlices[config.ImgListDisabled],
-		Mask:     s.g.assets.NineSlices[config.ImgListMask],
-	}
-
-	appList := widget.NewList(
-		widget.ListOpts.Entries(am.appLinks()),
-		widget.ListOpts.EntryLabelFunc(func(e interface{}) string {
+	mainContainer.AddChild(s.g.assets.Prefabs.AppPanel.Make(
+		am.appLinks(),
+		func(e interface{}) string {
 			return e.(appLink).app.title
-		}),
-		widget.ListOpts.ScrollContainerOpts(widget.ScrollContainerOpts.Image(listScrollContainerImages)),
-		widget.ListOpts.EntryColor(listColors),
-		widget.ListOpts.EntryFontFace(s.g.assets.Fonts[config.FntDefault]),
-		widget.ListOpts.EntryTextPadding(widget.Insets{5, 18, 7, 5}),
-		widget.ListOpts.HideHorizontalSlider(),
-		widget.ListOpts.HideVerticalSlider(),
-		widget.ListOpts.IsMulti(),
-		widget.ListOpts.EntrySelectedHandler(func(args *widget.ListEntrySelectedEventArgs) {
+		},
+		func(args *widget.ListEntrySelectedEventArgs) {
 			am.appToggle(args.Entry.(appLink).app)
-		}),
-		widget.ListOpts.ContainerOpts(widget.ContainerOpts.WidgetOpts(widget.WidgetOpts.LayoutData(widget.RowLayoutData{
-			Stretch: true,
-		}))),
-	)
-	mainContainer.AddChild(appList)
+		},
+	))
 
 	return nil
 }

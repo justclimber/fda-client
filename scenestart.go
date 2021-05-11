@@ -42,6 +42,8 @@ func (s *SceneStart) loadConfigUpdate() SceneStateUpdateFunc {
 func (s *SceneStart) loadAssetsUpdate(imgIndex int, fontIndex int, log []string) SceneStateUpdateFunc {
 	return func(dt time.Duration) (SceneStateUpdateFunc, SceneStateDrawFunc, bool, error) {
 		if imgIndex == len(config.GetAvailableImages()) && fontIndex == len(config.GetAvailableFonts()) {
+			s.g.assets.Prefabs = config.NewPrefabs(s.g.assets, s.g.config)
+
 			duration := 2 * time.Millisecond
 			return s.serverConnectingUpdate(duration), s.serverConnectingDraw(duration), true, nil
 		}
