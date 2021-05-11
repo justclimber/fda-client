@@ -42,7 +42,10 @@ func (s *SceneMain) setupUI() error {
 
 	footerContainer.AddChild(footerText)
 
-	apps := []*app{s.testApp()}
+	apps := []*app{
+		s.testButtonApp(),
+		s.testImageCallbackApp(),
+	}
 
 	am := newAppManager(
 		s.ui,
@@ -93,16 +96,7 @@ func (s *SceneMain) setupUI() error {
 	return nil
 }
 
-func (s *SceneMain) testApp() *app {
-	c := widget.NewContainer(
-		"page content",
-		widget.ContainerOpts.WidgetOpts(widget.WidgetOpts.LayoutData(widget.RowLayoutData{
-			Stretch: true,
-		})),
-		widget.ContainerOpts.Layout(widget.NewRowLayout(
-			widget.RowLayoutOpts.Direction(widget.DirectionVertical),
-			widget.RowLayoutOpts.Spacing(10),
-		)))
+func (s *SceneMain) testButtonApp() *app {
 	img := s.g.assets.NineSlices[config.ImgButton]
 	buttonImage := &widget.ButtonImage{
 		Idle:     img,
@@ -119,13 +113,23 @@ func (s *SceneMain) testApp() *app {
 			Stretch: true,
 		})),
 		widget.ButtonOpts.Image(buttonImage),
-		widget.ButtonOpts.Text("123 button", s.g.assets.Fonts[config.FntDefault], buttonColor),
+		widget.ButtonOpts.Text("test button", s.g.assets.Fonts[config.FntDefault], buttonColor),
 		widget.ButtonOpts.TextPadding(widget.Insets{7, 15, 15, 7}),
 	)
-	c.AddChild(b)
 
 	return &app{
-		title:   "test app",
-		content: c,
+		title:   "test button app",
+		content: b,
+	}
+}
+
+func (s *SceneMain) testImageCallbackApp() *app {
+	g := widget.NewGraphic(
+		widget.GraphicOpts.Callback(s.drawHistoryPlayerCallback),
+		widget.GraphicOpts.Image(s.historyPlayerImage),
+	)
+	return &app{
+		title:   "test callback app",
+		content: g,
 	}
 }

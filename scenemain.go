@@ -2,24 +2,29 @@ package main
 
 import (
 	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
 	"github.com/justclimber/ebitenui"
 	"github.com/justclimber/ebitenui/widget"
+	"golang.org/x/image/colornames"
+	"image"
 	"sync"
 	"time"
 )
 
 type SceneMain struct {
 	SceneState
-	g *Game
-	ui *ebitenui.UI
-	init sync.Once
+	g                  *Game
+	ui                 *ebitenui.UI
+	init               sync.Once
+	historyPlayerImage *ebiten.Image
 }
 
 func newSceneMain(g *Game) *SceneMain {
 	s := &SceneMain{g: g}
 	s.stateUpdateFunc = s.idleUpdate
 	s.stateDrawFunc = s.idleDraw
+	s.historyPlayerImage = ebiten.NewImage(200, 200)
 
 	return s
 }
@@ -51,4 +56,15 @@ func (s *SceneMain) idleUpdate(dt time.Duration) (SceneStateUpdateFunc, SceneSta
 
 func (s *SceneMain) idleDraw(screen *ebiten.Image) {
 	s.ui.Draw(screen)
+}
+
+func (s *SceneMain) drawHistoryPlayerCallback(image *ebiten.Image, origin image.Rectangle)  {
+	ebitenutil.DrawRect(
+		image,
+		float64(30 + origin.Min.X),
+		float64(30 + origin.Min.Y),
+		100,
+		100,
+		colornames.Aqua,
+	)
 }
