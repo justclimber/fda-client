@@ -60,6 +60,19 @@ type app struct {
 	windowCloseFunc ebitenui.RemoveWindowFunc
 }
 
+func (a *app) initWindowBoundsAndPos(am *appManager, ew, eh int) {
+	if a.w == 0 {
+		a.w, a.h = a.content.PreferredSize()
+		a.w += am.padding.Dx()
+		headerAndExtraSpaceY := 12
+		a.h += am.padding.Dy() + am.spacing + headerAndExtraSpaceY
+	}
+
+	r := gImage.Rectangle{gImage.Point{0, 0}, gImage.Point{a.w, a.h}}
+	r = r.Add(gImage.Point{(ew - a.w) / 2, (eh - a.h) / 2})
+	a.window.SetLocation(r)
+}
+
 type appLink struct {
 	app *app
 }
@@ -82,22 +95,10 @@ func (am *appManager) appToggle(app *app) {
 	app.openClosedState = stateOpen
 }
 
-func (am *appManager) calcWindowParams(widgetable widget.PreferredSizeLocateableWidget) (int, int, gImage.Point) {
-	w, h := widgetable.PreferredSize()
-	w += am.padding.Dx()
-	// @todo: calculate headerAndExtraSpaceY
-	headerAndExtraSpaceY := 12
-	h += am.padding.Dy() + am.spacing + headerAndExtraSpaceY
-	ew, eh := ebiten.WindowSize()
-	x := (ew - w) / 2
-	y := (eh - h) / 2
-	return w, h, gImage.Point{x, y}
-}
-
 func (am *appManager) initApps() {
-	for _, app := range am.apps {
+	for _, a := range am.apps {
 		c := widget.NewContainer(
-			"app "+app.title,
+			"a "+a.title,
 			widget.ContainerOpts.BackgroundImage(am.bgImage),
 			widget.ContainerOpts.Layout(widget.NewRowLayout(
 				widget.RowLayoutOpts.Direction(widget.DirectionVertical),
@@ -107,7 +108,7 @@ func (am *appManager) initApps() {
 		)
 
 		mc := widget.NewContainer(
-			"app "+app.title+" movable",
+			"a "+a.title+" movable",
 			widget.ContainerOpts.WidgetOpts(widget.WidgetOpts.LayoutData(widget.RowLayoutData{
 				Stretch: true,
 			})),
@@ -120,21 +121,18 @@ func (am *appManager) initApps() {
 			widget.TextOpts.WidgetOpts(widget.WidgetOpts.LayoutData(widget.RowLayoutData{
 				Stretch: true,
 			})),
-			widget.TextOpts.Text(app.title, am.face, am.headerColor),
+			widget.TextOpts.Text(a.title, am.face, am.headerColor),
 			widget.TextOpts.Position(widget.TextPositionStart, widget.TextPositionCenter),
 		))
 
-		c.AddChild(app.content)
+		c.AddChild(a.content)
 
-		app.window = widget.NewWindow(
+		a.window = widget.NewWindow(
 			widget.WindowOpts.Movable(mc),
 			widget.WindowOpts.Contents(c),
 		)
 
-		app.w, app.h, app.pos = am.calcWindowParams(app.content)
-
-		r := gImage.Rectangle{gImage.Point{0, 0}, gImage.Point{app.w, app.h}}
-		r = r.Add(app.pos)
-		app.window.SetLocation(r)
+		ew, eh := ebiten.WindowSize()
+		a.initWindowBoundsAndPos(am, ew, eh)
 	}
 }
