@@ -1,15 +1,13 @@
 package codeeditor
 
 import (
-	"fmt"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/text"
-	"github.com/justclimber/marslang/ast"
+	"github.com/justclimber/fda-lang/fdalang"
 	"golang.org/x/image/colornames"
 	"golang.org/x/image/font"
 	img "image"
 	"image/color"
-	"strconv"
 )
 
 const identWidth = 3
@@ -20,6 +18,8 @@ type CodeColor struct {
 	colorKeyword color.Color
 	colorConst   color.Color
 	colorSymbols color.Color
+	colorInvalid color.Color
+	colorType    color.Color
 }
 
 type CodeFont struct {
@@ -56,6 +56,8 @@ func (cd *CodeDrawer) reset(screen *ebiten.Image, p img.Point) {
 		colorKeyword: colornames.Aquamarine,
 		colorConst:   colornames.Green,
 		colorSymbols: colornames.Whitesmoke,
+		colorInvalid: colornames.Red,
+		colorType:    colornames.Aqua,
 	}
 }
 
@@ -65,61 +67,87 @@ func (cd *CodeDrawer) newLine(ident int) {
 	cd.ident += ident
 }
 
-func (cd *CodeDrawer) draw(screen *ebiten.Image, code *ast.StatementsBlock, rect img.Rectangle) {
+func (cd *CodeDrawer) drawLinesTokens(screen *ebiten.Image, code [][]fdalang.Token, rect img.Rectangle) {
 	if code == nil {
 		return
 	}
-	rect = rect.Add(img.Point{X: 150, Y: 23})
+	rect = rect.Add(img.Point{X: 0, Y: 20})
 	cd.reset(screen, rect.Min)
-	cd.drawStatementBlock(code)
-}
-
-func (cd *CodeDrawer) drawStatementBlock(stmts *ast.StatementsBlock) {
-	for i, stmt := range stmts.Statements {
-		switch astNode := stmt.(type) {
-		case *ast.IfStatement:
-			cd.drawIfStatement(astNode)
-		case *ast.Assignment:
-			cd.drawAssignmentStatement(astNode)
-			// @todo: other cases
-		}
-		if i+1 != len(stmts.Statements) {
-			cd.newLine(0)
-		}
+	for _, tokens := range code {
+		cd.drawTokens(tokens)
+		cd.newLine(0)
 	}
 }
 
-func (cd *CodeDrawer) drawIfStatement(ifStmt *ast.IfStatement) {
-	cd.drawText("if ", cd.colors.colorKeyword)
-	cd.drawExpression(ifStmt.Condition)
-	cd.drawText(" {", cd.colors.colorSymbols)
-	cd.newLine(1)
-	cd.drawStatementBlock(ifStmt.PositiveBranch)
-	cd.newLine(-1)
-	cd.drawText("}", cd.colors.colorSymbols)
-}
-
-func (cd *CodeDrawer) drawExpression(expr ast.IExpression) {
-	switch astNode := expr.(type) {
-	case *ast.BinExpression:
-		cd.drawBinExpression(astNode)
-	case *ast.NumInt:
-		cd.drawText(strconv.Itoa(int(astNode.Value)), cd.colors.colorConst)
-	case *ast.Identifier:
-		cd.drawText(astNode.Value, cd.colors.colorConst)
+func (cd *CodeDrawer) tokenColorMap() map[fdalang.TokenID]color.Color {
+	return map[fdalang.TokenID]color.Color{
+		fdalang.TokenNumInt:   cd.colors.colorConst,
+		fdalang.TokenNumFloat: cd.colors.colorConst,
+		fdalang.TokenTrue:     cd.colors.colorConst,
+		fdalang.TokenFalse:    cd.colors.colorConst,
+		fdalang.TokenIdent:    cd.colors.colorIdent,
+		fdalang.TokenStruct:   cd.colors.colorKeyword,
+		fdalang.TokenIf:       cd.colors.colorKeyword,
+		fdalang.TokenElse:     cd.colors.colorKeyword,
+		fdalang.TokenSwitch:   cd.colors.colorKeyword,
+		fdalang.TokenCase:     cd.colors.colorKeyword,
+		fdalang.TokenDefault:  cd.colors.colorKeyword,
+		fdalang.TokenFunction: cd.colors.colorKeyword,
+		fdalang.TokenReturn:   cd.colors.colorKeyword,
+		fdalang.TokenEnum:     cd.colors.colorKeyword,
+		fdalang.TokenType:     cd.colors.colorType,
+		fdalang.TokenInvalid:  cd.colors.colorInvalid,
 	}
 }
 
-func (cd *CodeDrawer) drawBinExpression(expr *ast.BinExpression) {
-	cd.drawExpression(expr.Left)
-	cd.drawText(fmt.Sprintf(" %s ", expr.Operator), cd.colors.colorSymbols)
-	cd.drawExpression(expr.Right)
+func (cd *CodeDrawer) colorForToken(t fdalang.TokenID) color.Color {
+	c, ok := cd.tokenColorMap()[t]
+	if !ok {
+		return cd.colors.colorSymbols
+	}
+	return c
 }
 
-func (cd *CodeDrawer) drawAssignmentStatement(expr *ast.Assignment) {
-	cd.drawText(expr.Left.Value, cd.colors.colorIdent)
-	cd.drawText(" = ", cd.colors.colorSymbols)
-	cd.drawExpression(expr.Value)
+func (cd *CodeDrawer) drawTokens(tokens []fdalang.Token) {
+	if len(tokens) == 0 {
+		return
+	}
+	spaceBeforeTokens := map[fdalang.TokenID]bool{
+		fdalang.TokenPlus:       true,
+		fdalang.TokenMinus:      true,
+		fdalang.TokenAssignment: true,
+	}
+	spaceAfterTokens := map[fdalang.TokenID]bool{
+		fdalang.TokenPlus:       true,
+		fdalang.TokenMinus:      true,
+		fdalang.TokenAssignment: true,
+		fdalang.TokenComma:      true,
+	}
+
+	prevTokenID := fdalang.TokenSOL
+	prevSpacePotential := false
+	if tokens[0].ID == fdalang.TokenRBrace && cd.ident > 0 {
+		cd.ident--
+	}
+	for _, t := range tokens {
+		spaceBeforeTokensStr := ""
+		spaceAfterTokensStr := ""
+		spacePotential := t.ID == fdalang.TokenIdent ||
+			fdalang.TokensKeywords()[t.ID] ||
+			fdalang.TokensConstants()[t.ID]
+		if _, ok := spaceBeforeTokens[t.ID]; ok || (spacePotential && prevSpacePotential) {
+			spaceBeforeTokensStr = " "
+		}
+		if _, ok := spaceAfterTokens[t.ID]; ok {
+			spaceAfterTokensStr = " "
+		}
+		cd.drawText(spaceBeforeTokensStr+t.Value+spaceAfterTokensStr, cd.colorForToken(t.ID))
+		prevTokenID = t.ID
+		prevSpacePotential = spacePotential
+	}
+	if prevTokenID == fdalang.TokenLBrace {
+		cd.ident++
+	}
 }
 
 func (cd *CodeDrawer) drawText(txt string, clr color.Color) {

@@ -1,14 +1,13 @@
 package codeeditor
 
 import (
+	"github.com/davecgh/go-spew/spew"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/justclimber/ebitenui/event"
 	"github.com/justclimber/ebitenui/image"
 	"github.com/justclimber/ebitenui/input"
 	"github.com/justclimber/ebitenui/widget"
-	"github.com/justclimber/marslang/ast"
-	"github.com/justclimber/marslang/lexer"
-	"github.com/justclimber/marslang/parser"
+	"github.com/justclimber/fda-lang/fdalang"
 	"golang.org/x/image/font"
 	"golang.org/x/image/math/fixed"
 	img "image"
@@ -23,9 +22,10 @@ import (
 type CodeEditor struct {
 	ChangedEvent *event.Event
 
-	Lines []string
-	Index []ast.INode
-	Code  *ast.StatementsBlock
+	Lines      []string
+	linesTokes [][]fdalang.Token
+	Index      []fdalang.AstNode
+	Code       *fdalang.AstStatementsBlock
 
 	codeDrawer CodeDrawer
 
@@ -51,6 +51,8 @@ type CodeEditor struct {
 	scrollOffset   int
 	focused        bool
 	lastInputText  string
+	dirty          *atomic.Value
+	parseTimer     *time.Timer
 }
 
 type Opt func(t *CodeEditor)
@@ -113,6 +115,7 @@ func NewCodeEditor(opts ...Opt) *CodeEditor {
 	t := &CodeEditor{
 		ChangedEvent:   &event.Event{},
 		Lines:          []string{""},
+		linesTokes:     [][]fdalang.Token{{}},
 		repeatDelay:    300 * time.Millisecond,
 		repeatInterval: 35 * time.Millisecond,
 
@@ -138,6 +141,9 @@ func NewCodeEditor(opts ...Opt) *CodeEditor {
 	for _, o := range opts {
 		o(t)
 	}
+
+	t.dirty = &atomic.Value{}
+	t.dirty.Store(false)
 
 	return t
 }
@@ -221,10 +227,6 @@ func (ce *CodeEditor) Render(screen *ebiten.Image, def widget.DeferredRenderFunc
 
 	ce.text.GetWidget().Disabled = ce.widget.Disabled
 
-	//if ce.cursorPosition > len([]rune(ce.InputText)) {
-	//	ce.cursorPosition = len([]rune(ce.InputText))
-	//}
-
 	for {
 		newState, rerun := ce.state()
 		if newState != nil {
@@ -299,7 +301,13 @@ func (ce *CodeEditor) charsInputState(c []rune) stateFunc {
 	return func() (stateFunc, bool) {
 		if !ce.widget.Disabled {
 			ce.doInsert(c)
-			ce.codeChanged()
+			hasInvalidTokens, err := ce.parseLineToTokens()
+			if err != nil {
+				log.Print(err.Error())
+			}
+			if !hasInvalidTokens && err == nil {
+				ce.parseCodeToAstDirty(true)
+			}
 		}
 
 		ce.cursor.ResetBlinking()
@@ -308,55 +316,91 @@ func (ce *CodeEditor) charsInputState(c []rune) stateFunc {
 	}
 }
 
-func (ce *CodeEditor) codeChanged() {
-	stringToParse := strings.Join(ce.Lines, "\n") + "\n"
-	l := lexer.New(stringToParse)
-	p, err := parser.New(l)
-	if err != nil {
-		log.Printf("Lexing error: %s\n", err.Error())
+func (ce *CodeEditor) parseLineToTokens() (bool, error) {
+	tokens, hasInvalidTokens, err := fdalang.ParseString(ce.Lines[ce.cursorPosition.Y])
+	ce.linesTokes[ce.cursorPosition.Y] = tokens
+	spew.Dump(ce.Lines[ce.cursorPosition.Y], ce.linesTokes[ce.cursorPosition.Y])
+	return hasInvalidTokens, err
+}
+
+func (ce *CodeEditor) parseCodeToAstDirty(dirty bool) {
+	if !dirty {
+		if ce.parseTimer != nil {
+			ce.parseTimer.Stop()
+		}
+		//ce.parseCodeToAst()
+	} else {
+		ce.dirty.Store(true)
+		duration := time.Second
+		if ce.parseTimer == nil {
+			ce.parseTimer = time.AfterFunc(duration, func() {
+				//if ce.parseCodeToAst() {
+				//	ce.dirty.Store(false)
+				//}
+			})
+		} else {
+			ce.parseTimer.Reset(duration)
+		}
 	}
+}
+
+func (ce *CodeEditor) parseCodeToAst() bool {
+	stringToParse := strings.Join(ce.Lines, "\n") + "\n"
+	l := fdalang.NewLexer(stringToParse)
+	p := fdalang.NewParser(l)
+	var err error
 	ce.Code, err = p.Parse()
 	if err != nil {
 		log.Printf("Parsing error: %s\n", err.Error())
+		return false
 	} else {
-		ce.buildIndex()
+		//ce.buildIndex()
+		return true
 	}
 }
 
 func (ce *CodeEditor) buildIndex() {
 	lineNumber := 0
-	ce.Index = make([]ast.INode, len(ce.Lines))
+	ce.Index = make([]fdalang.AstNode, len(ce.Lines))
 	ce.buildIndexForStatementsBlock(ce.Code, lineNumber)
 }
 
-func (ce *CodeEditor) buildIndexForStatementsBlock(stmts *ast.StatementsBlock, lineNumber int) int {
-	for _, stmt := range stmts.Statements {
-		ce.Index[lineNumber] = stmt
-		lineNumber++
-		switch astNode := stmt.(type) {
-		case *ast.Switch:
-			for _, c := range astNode.Cases {
-				ce.Index[lineNumber] = c
-				lineNumber++
-				lineNumber = ce.buildIndexForStatementsBlock(c.PositiveBranch, lineNumber)
+func (ce *CodeEditor) buildIndexForStatementsBlock(stmts *fdalang.AstStatementsBlock, lineNumber int) int {
+	/*
+		for _, stmt := range stmts.Statements {
+			ce.Index[lineNumber] = stmt
+			lineNumber++
+			switch astNode := stmt.(type) {
+			case *fdalang.AstSwitch:
+				for _, c := range astNode.Cases {
+					ce.Index[lineNumber] = c
+					lineNumber++
+					lineNumber = ce.buildIndexForStatementsBlock(c.PositiveBranch, lineNumber)
+				}
+				if astNode.DefaultBranch != nil {
+					lineNumber++
+					lineNumber = ce.buildIndexForStatementsBlock(astNode.DefaultBranch, lineNumber)
+				}
+			case *fdalang.AstIfStatement:
+				lineNumber = ce.buildIndexForStatementsBlock(astNode.PositiveBranch, lineNumber)
+				if astNode.ElseBranch != nil {
+					lineNumber++
+					lineNumber = ce.buildIndexForStatementsBlock(astNode.ElseBranch, lineNumber)
+				}
+				// @todo: other cases
 			}
-			if astNode.DefaultBranch != nil {
-				lineNumber++
-				lineNumber = ce.buildIndexForStatementsBlock(astNode.DefaultBranch, lineNumber)
-			}
-		case *ast.IfStatement:
-			lineNumber = ce.buildIndexForStatementsBlock(astNode.PositiveBranch, lineNumber)
-			if astNode.ElseBranch != nil {
-				lineNumber++
-				lineNumber = ce.buildIndexForStatementsBlock(astNode.ElseBranch, lineNumber)
-			}
-			// @todo: other cases
 		}
-	}
+	*/
 	return lineNumber
 }
 
-func (ce *CodeEditor) commandState(cmd controlCommand, key ebiten.Key, delay time.Duration, timer *time.Timer, expired *atomic.Value) stateFunc {
+func (ce *CodeEditor) commandState(
+	cmd controlCommand,
+	key ebiten.Key,
+	delay time.Duration,
+	timer *time.Timer,
+	expired *atomic.Value,
+) stateFunc {
 	return func() (stateFunc, bool) {
 		if !input.KeyPressed(key) {
 			return ce.idleState(true), true
@@ -440,61 +484,118 @@ func (ce *CodeEditor) doGoXY(x int, y int) {
 }
 
 func (ce *CodeEditor) doBackspace() {
-	if !ce.widget.Disabled && ce.cursorPosition.X > 0 {
-		ce.Lines[ce.cursorPosition.Y] = string(removeChar([]rune(ce.Lines[ce.cursorPosition.Y]), ce.cursorPosition.X-1))
+	if ce.widget.Disabled {
+		return
+	}
+	if ce.cursorPosition.X > 0 {
+		ce.Lines[ce.cursorPosition.Y] =
+			string(removeChar([]rune(ce.Lines[ce.cursorPosition.Y]), ce.cursorPosition.X-1))
 		ce.cursorPosition.X--
 	} else if ce.cursorPosition.Y > 0 {
 		ce.cursorPosition.Y--
 		ce.cursorPosition.X = len(ce.Lines[ce.cursorPosition.Y])
-		ce.Lines[ce.cursorPosition.Y] += ce.Lines[ce.cursorPosition.Y+1]
-		ce.Lines = append(ce.Lines[:ce.cursorPosition.Y+1], ce.Lines[ce.cursorPosition.Y+2:]...)
+		ce.joinLinesAtPosition()
 	}
+
+	var err error
+	ce.linesTokes[ce.cursorPosition.Y], _, err = fdalang.ParseString(ce.Lines[ce.cursorPosition.Y])
+	if err != nil {
+		log.Print(err.Error())
+	}
+
 	ce.cursor.ResetBlinking()
+	ce.parseCodeToAstDirty(true)
+}
+
+func (ce *CodeEditor) joinLinesAtPosition() {
+	ce.Lines[ce.cursorPosition.Y] += ce.Lines[ce.cursorPosition.Y+1]
+	ce.Lines = append(ce.Lines[:ce.cursorPosition.Y+1], ce.Lines[ce.cursorPosition.Y+2:]...)
+	ce.linesTokes = append(ce.linesTokes[:ce.cursorPosition.Y+1], ce.linesTokes[ce.cursorPosition.Y+2:]...)
 }
 
 func (ce *CodeEditor) doDelete() {
-	if !ce.widget.Disabled && ce.cursorPosition.X < len([]rune(ce.Lines[ce.cursorPosition.Y])) {
-		ce.Lines[ce.cursorPosition.Y] = string(removeChar([]rune(ce.Lines[ce.cursorPosition.Y]), ce.cursorPosition.X))
+	if ce.widget.Disabled {
+		return
 	}
+	if ce.cursorPosition.X < len([]rune(ce.Lines[ce.cursorPosition.Y])) {
+		ce.Lines[ce.cursorPosition.Y] =
+			string(removeChar([]rune(ce.Lines[ce.cursorPosition.Y]), ce.cursorPosition.X))
+	} else if ce.cursorPosition.Y < len(ce.Lines)-1 {
+		ce.joinLinesAtPosition()
+	}
+	var err error
+	ce.linesTokes[ce.cursorPosition.Y], _, err = fdalang.ParseString(ce.Lines[ce.cursorPosition.Y])
+	if err != nil {
+		log.Print(err.Error())
+	}
+
 	ce.cursor.ResetBlinking()
+	ce.parseCodeToAstDirty(true)
 }
 
 func (ce *CodeEditor) doEnter() {
-	if !ce.widget.Disabled {
-		left := ce.Lines[ce.cursorPosition.Y][ce.cursorPosition.X:]
-		ce.Lines[ce.cursorPosition.Y] = ce.Lines[ce.cursorPosition.Y][:ce.cursorPosition.X]
-		if len(ce.Lines) == ce.cursorPosition.Y+1 {
-			ce.Lines = append(ce.Lines, left)
-			ce.cursorPosition.Y++
-		} else {
-			ce.cursorPosition.Y++
-			ce.Lines = append(ce.Lines[:ce.cursorPosition.Y+1], ce.Lines[ce.cursorPosition.Y:]...)
-			ce.Lines[ce.cursorPosition.Y] = left
-		}
-		ce.cursorPosition.X = 0
+	if ce.widget.Disabled {
+		return
 	}
+	var err error
+	left := ce.Lines[ce.cursorPosition.Y][ce.cursorPosition.X:]
+	ce.Lines[ce.cursorPosition.Y] = ce.Lines[ce.cursorPosition.Y][:ce.cursorPosition.X]
+	if len(ce.Lines) == ce.cursorPosition.Y+1 {
+		ce.Lines = append(ce.Lines, left)
+		tokens, _, err := fdalang.ParseString(left)
+		if err != nil {
+			log.Print(err.Error())
+		} else {
+			ce.linesTokes = append(ce.linesTokes, tokens)
+		}
+		if ce.cursorPosition.Y != len(ce.Lines[ce.cursorPosition.Y])-1 {
+			ce.linesTokes[ce.cursorPosition.Y], _, err = fdalang.ParseString(ce.Lines[ce.cursorPosition.Y])
+			if err != nil {
+				log.Print(err.Error())
+			}
+		}
+		ce.cursorPosition.Y++
+	} else {
+		ce.cursorPosition.Y++
+		ce.Lines = append(ce.Lines[:ce.cursorPosition.Y+1], ce.Lines[ce.cursorPosition.Y:]...)
+		ce.Lines[ce.cursorPosition.Y] = left
+		ce.linesTokes = append(ce.linesTokes[:ce.cursorPosition.Y+1], ce.linesTokes[ce.cursorPosition.Y:]...)
+		ce.linesTokes[ce.cursorPosition.Y], _, err = fdalang.ParseString(ce.Lines[ce.cursorPosition.Y])
+		if err != nil {
+			log.Print(err.Error())
+		}
+		ce.linesTokes[ce.cursorPosition.Y-1], _, err = fdalang.ParseString(ce.Lines[ce.cursorPosition.Y-1])
+		if err != nil {
+			log.Print(err.Error())
+		}
+	}
+	ce.cursorPosition.X = 0
+
 	ce.cursor.ResetBlinking()
+	ce.parseCodeToAstDirty(false)
 }
 
 func (ce *CodeEditor) doGoUp() {
-	if !ce.widget.Disabled {
-		if ce.cursorPosition.Y > 0 {
-			ce.cursorPosition.Y--
-			if ce.cursorPosition.X > len(ce.Lines[ce.cursorPosition.Y]) {
-				ce.cursorPosition.X = len(ce.Lines[ce.cursorPosition.Y])
-			}
+	if ce.widget.Disabled {
+		return
+	}
+	if ce.cursorPosition.Y > 0 {
+		ce.cursorPosition.Y--
+		if ce.cursorPosition.X > len(ce.Lines[ce.cursorPosition.Y]) {
+			ce.cursorPosition.X = len(ce.Lines[ce.cursorPosition.Y])
 		}
 	}
 	ce.cursor.ResetBlinking()
 }
 
 func (ce *CodeEditor) doGoDown() {
-	if !ce.widget.Disabled {
-		if ce.cursorPosition.Y < len(ce.Lines)-1 {
-			ce.cursorPosition.Y++
-			if ce.cursorPosition.X > len(ce.Lines[ce.cursorPosition.Y]) {
-				ce.cursorPosition.X = len(ce.Lines[ce.cursorPosition.Y])
-			}
+	if ce.widget.Disabled {
+		return
+	}
+	if ce.cursorPosition.Y < len(ce.Lines)-1 {
+		ce.cursorPosition.Y++
+		if ce.cursorPosition.X > len(ce.Lines[ce.cursorPosition.Y]) {
+			ce.cursorPosition.X = len(ce.Lines[ce.cursorPosition.Y])
 		}
 	}
 	ce.cursor.ResetBlinking()
@@ -581,7 +682,7 @@ func (ce *CodeEditor) drawTextAndCaret(screen *ebiten.Image, def widget.Deferred
 		ce.text.Color = ce.colors.Idle
 	}
 	ce.text.Render(screen, def, debugMode)
-	ce.codeDrawer.draw(screen, ce.Code, ce.widget.Rect)
+	ce.codeDrawer.drawLinesTokens(screen, ce.linesTokes, ce.text.GetWidget().Rect)
 
 	if ce.focused {
 		if ce.widget.Disabled {
