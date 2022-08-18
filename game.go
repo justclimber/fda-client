@@ -2,9 +2,11 @@ package main
 
 import (
 	"errors"
-	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/justclimber/fda-client/config"
 	"time"
+
+	"github.com/hajimehoshi/ebiten/v2"
+
+	"github.com/justclimber/fda-client/config"
 )
 
 type SceneID string

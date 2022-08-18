@@ -2,8 +2,9 @@ package main
 
 import (
 	"fmt"
-	"github.com/hajimehoshi/ebiten/v2"
 	"time"
+
+	"github.com/hajimehoshi/ebiten/v2"
 )
 
 type SceneStateUpdateFunc func(dt time.Duration) (

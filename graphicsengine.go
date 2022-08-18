@@ -1,11 +1,12 @@
 package main
 
 import (
-	"github.com/hajimehoshi/ebiten/v2"
 	"log"
+
+	"github.com/hajimehoshi/ebiten/v2"
 )
 
-func RunOnEbiten(game *Game)  {
+func RunOnEbiten(game *Game) {
 	ebiten.SetWindowSize(1300, 800)
 	ebiten.SetWindowTitle("FDA Game Prototype")
 	ebiten.SetVsyncEnabled(false)

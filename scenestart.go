@@ -3,13 +3,15 @@ package main
 import (
 	"errors"
 	"fmt"
-	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
-	"github.com/justclimber/ebitenui/image"
-	"github.com/justclimber/fda-client/config"
 	_ "image/png"
 	"strings"
 	"time"
+
+	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
+	"github.com/justclimber/ebitenui/image"
+
+	"github.com/justclimber/fda-client/config"
 )
 
 const configFileName = "config.json"
@@ -61,7 +63,7 @@ func (s *SceneStart) loadAssetsUpdate(imgIndex int, fontIndex int, log []string)
 
 			i, _, err := ebitenutil.NewImageFromFile(filePath)
 			if err != nil {
-				return s.error("loading asset img from file " + filePath, err)
+				return s.error("loading asset img from file "+filePath, err)
 			}
 
 			if nineSlicesParams.Centered {

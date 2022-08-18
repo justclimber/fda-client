@@ -3,8 +3,9 @@ package main
 import (
 	"github.com/justclimber/ebitenui"
 	"github.com/justclimber/ebitenui/widget"
-	"github.com/justclimber/fda-client/config"
 	"golang.org/x/image/colornames"
+
+	"github.com/justclimber/fda-client/config"
 )
 
 func (s *SceneMain) setupUI() error {

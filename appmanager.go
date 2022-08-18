@@ -1,18 +1,20 @@
 package main
 
 import (
+	gImage "image"
+
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/justclimber/ebitenui"
 	"github.com/justclimber/ebitenui/widget"
+
 	"github.com/justclimber/fda-client/config"
-	gImage "image"
 )
 
 type appManager struct {
-	apps        []*app
-	ui          *ebitenui.UI
-	padding     widget.Insets
-	spacing     int
+	apps    []*app
+	ui      *ebitenui.UI
+	padding widget.Insets
+	spacing int
 }
 
 func newAppManager(
@@ -23,10 +25,10 @@ func newAppManager(
 	windowPrefab config.Window,
 ) *appManager {
 	a := &appManager{
-		apps:        apps,
-		ui:          ui,
-		padding:     padding,
-		spacing:     spacing,
+		apps:    apps,
+		ui:      ui,
+		padding: padding,
+		spacing: spacing,
 	}
 	a.initApps(windowPrefab)
 	return a
